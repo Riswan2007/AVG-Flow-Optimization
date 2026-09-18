@@ -27,6 +27,13 @@ export const ChargingStation3D: React.FC<ChargingStation3DProps> = ({ node, onSe
         e.stopPropagation();
         onSelectNode(node.id);
       }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto';
+      }}
     >
       {/* Charging Base Pad */}
       <mesh position={[0, 0.05, 0]} receiveShadow>

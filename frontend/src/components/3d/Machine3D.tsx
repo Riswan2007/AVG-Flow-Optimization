@@ -30,6 +30,13 @@ export const Machine3D: React.FC<Machine3DProps> = ({ node, onSelectNode }) => {
         e.stopPropagation();
         onSelectNode(node.id);
       }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto';
+      }}
     >
       {/* Station Ground Pad */}
       <mesh position={[0, 0.05, 0]} receiveShadow>

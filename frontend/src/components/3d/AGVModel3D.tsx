@@ -75,15 +75,19 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
       }}
       onPointerOver={(e) => {
         e.stopPropagation();
+        document.body.style.cursor = 'pointer';
         onHover(agv.id);
       }}
-      onPointerOut={() => onHover(null)}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto';
+        onHover(null);
+      }}
     >
-      {/* Selection Glow Cylinder */}
+      {/* Animated Glowing Selection Ring */}
       {isSelected && (
         <mesh position={[0, 0.05, 0]}>
-          <cylinderGeometry args={[2.2, 2.2, 0.1, 32]} />
-          <meshBasicMaterial color="#06b6d4" transparent opacity={0.4} />
+          <ringGeometry args={[1.8, 2.3, 32]} />
+          <meshBasicMaterial color="#06b6d4" side={THREE.DoubleSide} transparent opacity={0.7} />
         </mesh>
       )}
 

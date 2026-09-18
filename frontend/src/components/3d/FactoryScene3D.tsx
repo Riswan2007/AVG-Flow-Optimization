@@ -11,7 +11,7 @@ import { TaskMarker3D } from './TaskMarker3D';
 import { CameraControls3D } from './CameraControls3D';
 import { Legend3D } from './Legend3D';
 import { ExplainMode3D } from './ExplainMode3D';
-import { Camera, Eye, RotateCcw, Crosshair, HelpCircle } from 'lucide-react';
+import { Camera, Eye, RotateCcw, HelpCircle } from 'lucide-react';
 
 interface FactoryScene3DProps {
   nodes: FactoryNode[];
@@ -94,7 +94,7 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
           <Camera className="w-3.5 h-3.5 text-cyan-400" /> Camera:
         </span>
         <button
-          onClick={() => setCameraMode('reset')}
+          onClick={() => { setCameraMode('reset'); onSelectAgv(''); }}
           className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
             cameraMode === 'reset' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800'
           }`}
@@ -117,15 +117,34 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
         >
           Isometric
         </button>
-        <button
-          onClick={() => setCameraMode('follow')}
-          disabled={!selectedAgvId}
-          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1 disabled:opacity-40 ${
-            cameraMode === 'follow' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800'
-          }`}
+
+        {/* Dynamic AGV Follow Dropdown for Instant Selection & Camera Tracking */}
+        <select
+          value={cameraMode === 'follow' && selectedAgvId ? selectedAgvId : ''}
+          onChange={(e) => {
+            const agvId = e.target.value;
+            if (agvId) {
+              onSelectAgv(agvId);
+              setCameraMode('follow');
+            } else {
+              setCameraMode('reset');
+            }
+          }}
+          className="bg-slate-950 border border-slate-700 text-cyan-300 font-bold text-xs rounded-lg px-2.5 py-1 outline-none cursor-pointer hover:border-cyan-500 transition-all"
         >
-          <Crosshair className="w-3 h-3" /> Follow AGV
-        </button>
+          <option value="">🎥 Follow AGV Target...</option>
+          {agvs.map((a) => (
+            <option key={a.id} value={a.id}>
+              🤖 Follow {a.id} ({a.status.toUpperCase()} - {Math.round(a.battery)}%)
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Quick 3D Interaction Usability Hint Overlay */}
+      <div className="absolute bottom-4 left-4 z-10 bg-slate-900/85 border border-slate-800 px-3 py-1.5 rounded-xl backdrop-blur-md text-[11px] text-slate-300 flex items-center gap-2 shadow-lg">
+        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span><strong>Click 3D AGVs, Racks, or Machines</strong> to inspect telemetry & active decision metrics</span>
       </div>
 
       {/* R3F WebGL 3D Canvas */}

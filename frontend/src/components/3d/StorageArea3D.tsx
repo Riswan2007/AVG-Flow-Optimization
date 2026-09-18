@@ -18,6 +18,13 @@ export const StorageArea3D: React.FC<StorageArea3DProps> = ({ node, onSelectNode
         e.stopPropagation();
         onSelectNode(node.id);
       }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto';
+      }}
     >
       {/* Ground Station Base Pad */}
       <mesh position={[0, 0.05, 0]} receiveShadow>
