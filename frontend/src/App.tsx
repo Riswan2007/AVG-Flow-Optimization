@@ -7,7 +7,7 @@ import { api } from './services/api';
 
 import { Header } from './components/Header';
 import { KPICards } from './components/KPICards';
-import { FactoryMap } from './components/FactoryMap';
+
 import { FactoryScene3D } from './components/3d/FactoryScene3D';
 import { InspectorPanel3D } from './components/3d/InspectorPanel3D';
 import { ReoptimizationOverlay } from './components/3d/ReoptimizationOverlay';
@@ -20,7 +20,7 @@ import { DynamicEventPanel } from './components/DynamicEventPanel';
 import { SimulationControls } from './components/SimulationControls';
 import { AnalyticsPanel } from './components/AnalyticsPanel';
 import { DemoScenarioManager } from './components/DemoScenarioManager';
-import { Layers, Box, LayoutGrid } from 'lucide-react';
+
 
 export function App() {
   const [agvs, setAgvs] = useState<AGV[]>([]);
@@ -40,7 +40,6 @@ export function App() {
     status: 'Paused'
   });
 
-  const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
   const [isExplainMode, setIsExplainMode] = useState<boolean>(false);
 
   const [selectedAgvId, setSelectedAgvId] = useState<string | null>(null);
@@ -169,107 +168,52 @@ export function App() {
         {/* Simulation Controls */}
         <SimulationControls state={simState} onControl={(act, spd) => api.controlSimulation(act, spd).then(setSimState)} />
 
-        {/* View Mode Toggle Switch (2D SVG vs 3D WebGL) */}
-        <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-xl p-3 px-5 shadow-lg backdrop-blur-md">
-          <div className="flex items-center gap-2.5">
-            <Layers className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              Factory Material Movement Viewport ({viewMode} View)
-            </h2>
-          </div>
-
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
-            <button
-              onClick={() => setViewMode('2D')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
-                viewMode === '2D'
-                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md font-bold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" /> 2D SVG View
-            </button>
-            <button
-              onClick={() => setViewMode('3D')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
-                viewMode === '3D'
-                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md font-bold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Box className="w-4 h-4" /> 3D WebGL View
-            </button>
-          </div>
+        {/* Factory 3D Viewport Header */}
+        <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-xl p-3 px-5 shadow-lg backdrop-blur-md">
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+            🏭 Factory Material Movement — 3D Live Viewport
+          </h2>
         </div>
 
         {/* Main Grid: Interactive Factory Viewport + Decision Inspector */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Interactive Factory Scene (2D SVG or 3D WebGL) + Before/After Diffs */}
           <div className="lg:col-span-8 space-y-6">
-            {viewMode === '3D' ? (
-              <FactoryScene3D
-                nodes={nodes}
-                edges={edges}
-                agvs={agvs}
-                tasks={tasks}
-                selectedAgvId={selectedAgvId}
-                selectedTaskId={selectedTaskId}
-                onSelectAgv={(id) => {
-                  setSelectedAgvId(id === selectedAgvId ? null : id);
-                  setSelectedTaskId(null);
-                  setSelectedEdgeKey(null);
-                  setSelectedNodeId(null);
-                }}
-                onSelectTask={(id) => {
-                  setSelectedTaskId(id === selectedTaskId ? null : id);
-                  setSelectedAgvId(null);
-                  setSelectedEdgeKey(null);
-                  setSelectedNodeId(null);
-                }}
-                onSelectRoute={(s, t) => {
-                  setSelectedEdgeKey({ source: s, target: t });
-                  setSelectedAgvId(null);
-                  setSelectedTaskId(null);
-                  setSelectedNodeId(null);
-                }}
-                onSelectNode={(id) => {
-                  setSelectedNodeId(id === selectedNodeId ? null : id);
-                  setSelectedAgvId(null);
-                  setSelectedTaskId(null);
-                  setSelectedEdgeKey(null);
-                }}
-                isExplainMode={isExplainMode}
-                onToggleExplainMode={() => setIsExplainMode(prev => !prev)}
-                assignmentDetail={activeAssignmentDetail}
-              />
-            ) : (
-              <FactoryMap
-                nodes={nodes}
-                edges={edges}
-                agvs={agvs}
-                tasks={tasks}
-                selectedAgvId={selectedAgvId}
-                selectedTaskId={selectedTaskId}
-                onSelectAgv={(id) => {
-                  setSelectedAgvId(id === selectedAgvId ? null : id);
-                  setSelectedTaskId(null);
-                  setSelectedEdgeKey(null);
-                  setSelectedNodeId(null);
-                }}
-                onSelectTask={(id) => {
-                  setSelectedTaskId(id === selectedTaskId ? null : id);
-                  setSelectedAgvId(null);
-                  setSelectedEdgeKey(null);
-                  setSelectedNodeId(null);
-                }}
-                onEdgeClick={(s, t) => {
-                  setSelectedEdgeKey({ source: s, target: t });
-                  setSelectedAgvId(null);
-                  setSelectedTaskId(null);
-                  setSelectedNodeId(null);
-                }}
-              />
-            )}
+            <FactoryScene3D
+              nodes={nodes}
+              edges={edges}
+              agvs={agvs}
+              tasks={tasks}
+              selectedAgvId={selectedAgvId}
+              selectedTaskId={selectedTaskId}
+              onSelectAgv={(id) => {
+                setSelectedAgvId(id === selectedAgvId ? null : id);
+                setSelectedTaskId(null);
+                setSelectedEdgeKey(null);
+                setSelectedNodeId(null);
+              }}
+              onSelectTask={(id) => {
+                setSelectedTaskId(id === selectedTaskId ? null : id);
+                setSelectedAgvId(null);
+                setSelectedEdgeKey(null);
+                setSelectedNodeId(null);
+              }}
+              onSelectRoute={(s, t) => {
+                setSelectedEdgeKey({ source: s, target: t });
+                setSelectedAgvId(null);
+                setSelectedTaskId(null);
+                setSelectedNodeId(null);
+              }}
+              onSelectNode={(id) => {
+                setSelectedNodeId(id === selectedNodeId ? null : id);
+                setSelectedAgvId(null);
+                setSelectedTaskId(null);
+                setSelectedEdgeKey(null);
+              }}
+              isExplainMode={isExplainMode}
+              onToggleExplainMode={() => setIsExplainMode(prev => !prev)}
+              assignmentDetail={activeAssignmentDetail}
+            />
 
             <BeforeAfterOptimizationView diffs={diffs} />
           </div>
