@@ -70,7 +70,15 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
   }
 
   return (
-    <div className="relative w-full aspect-[16/9] min-h-[480px] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
+    <div className="relative w-full aspect-[16/9] min-h-[520px] bg-slate-950 rounded-2xl border-2 border-cyan-500/30 overflow-hidden shadow-2xl">
+      {/* Rectangular Box Title Badge */}
+      <div className="absolute top-4 left-4 z-10 bg-slate-900/90 border border-slate-800 px-3.5 py-1.5 rounded-xl shadow-xl backdrop-blur-md flex items-center gap-2">
+        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span className="text-xs font-extrabold text-white tracking-wider uppercase font-mono">
+          3D FACTORY DIGITAL TWIN BOX
+        </span>
+      </div>
+
       {/* 3D Visual Key Legend */}
       <Legend3D />
 
