@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build output
+dist/
+frontend/dist/
+build/
+
+# Environment & IDE
+.env
+.env.local
+.vscode/
+.idea/
+
+# Database (auto-seeded on startup)
+*.db
+backend/database/*.db
+
+# OS files
+Thumbs.db
+Desktop.ini
