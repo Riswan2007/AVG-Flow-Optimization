@@ -14,11 +14,12 @@ import { ReoptimizationOverlay } from './components/3d/ReoptimizationOverlay';
 import { AGVPanel } from './components/AGVPanel';
 import { TaskPanel } from './components/TaskPanel';
 import { OptimizationExplanationPanel } from './components/OptimizationExplanationPanel';
+import { ActivityLogPanel } from './components/ActivityLogPanel';
 import { BeforeAfterOptimizationView } from './components/BeforeAfterOptimizationView';
 import { DynamicEventPanel } from './components/DynamicEventPanel';
-import { ActivityLogPanel } from './components/ActivityLogPanel';
 import { SimulationControls } from './components/SimulationControls';
 import { AnalyticsPanel } from './components/AnalyticsPanel';
+import { DemoScenarioManager } from './components/DemoScenarioManager';
 import { Layers, Box, LayoutGrid } from 'lucide-react';
 
 export function App() {
@@ -40,6 +41,7 @@ export function App() {
   });
 
   const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
+  const [isExplainMode, setIsExplainMode] = useState<boolean>(false);
 
   const [selectedAgvId, setSelectedAgvId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -149,7 +151,13 @@ export function App() {
         {/* KPI Cards Row */}
         <KPICards agvs={agvs} tasks={tasks} edges={edges} />
 
-        {/* Hackathon Demo Event Trigger Panel */}
+        {/* Hackathon Demo Scenario Controller */}
+        <DemoScenarioManager
+          onTriggerReason={(reason) => setTriggerOverlayReason(reason)}
+          onRefreshData={fetchData}
+        />
+
+        {/* Dynamic Event Trigger Panel */}
         <DynamicEventPanel
           onSimulateAGVFailure={() => handleTriggerEvent(() => api.triggerAGVFailure(selectedAgvId || undefined), 'Simulated AGV Failure')}
           onCreateUrgentTask={() => handleTriggerEvent(() => api.triggerUrgentTask(), 'New Urgent Task Created')}
@@ -230,6 +238,9 @@ export function App() {
                   setSelectedTaskId(null);
                   setSelectedEdgeKey(null);
                 }}
+                isExplainMode={isExplainMode}
+                onToggleExplainMode={() => setIsExplainMode(prev => !prev)}
+                assignmentDetail={activeAssignmentDetail}
               />
             ) : (
               <FactoryMap

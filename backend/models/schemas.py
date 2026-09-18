@@ -49,6 +49,7 @@ class AGV(BaseModel):
     location: str
     battery: float  # percentage 0-100
     status: AGVStatus
+    action_state: str = "IDLE"  # "IDLE", "MOVING_TO_SOURCE", "LOADING", "TRANSPORTING", "UNLOADING", "CHARGING", "OFFLINE"
     speed: float  # m/s
     capacity: float  # kg
     current_task: Optional[str] = None
@@ -65,6 +66,7 @@ class Task(BaseModel):
     quantity: float  # kg
     priority: TaskPriority
     status: TaskStatus
+    progress_percent: float = 0.0  # 0 to 100%
     assigned_agv: Optional[str] = None
     assigned_route: List[str] = Field(default_factory=list)
     created_at: str

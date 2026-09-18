@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import type { FactoryNode, FactoryEdge, AGV, Task } from '../../types/smartagv';
+import type { FactoryNode, FactoryEdge, AGV, Task, TaskAssignmentDetail } from '../../types/smartagv';
 import { FactoryEnvironment3D } from './FactoryEnvironment3D';
 import { StorageArea3D } from './StorageArea3D';
 import { Machine3D } from './Machine3D';
@@ -10,7 +10,8 @@ import { AGVFleet3D } from './AGVFleet3D';
 import { TaskMarker3D } from './TaskMarker3D';
 import { CameraControls3D } from './CameraControls3D';
 import { Legend3D } from './Legend3D';
-import { Camera, Eye, RotateCcw, Crosshair } from 'lucide-react';
+import { ExplainMode3D } from './ExplainMode3D';
+import { Camera, Eye, RotateCcw, Crosshair, HelpCircle } from 'lucide-react';
 
 interface FactoryScene3DProps {
   nodes: FactoryNode[];
@@ -19,6 +20,9 @@ interface FactoryScene3DProps {
   tasks: Task[];
   selectedAgvId: string | null;
   selectedTaskId: string | null;
+  assignmentDetail: TaskAssignmentDetail | null;
+  isExplainMode: boolean;
+  onToggleExplainMode: () => void;
   onSelectAgv: (agvId: string) => void;
   onSelectTask: (taskId: string) => void;
   onSelectRoute: (source: string, target: string) => void;
@@ -32,6 +36,9 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
   tasks,
   selectedAgvId,
   selectedTaskId,
+  assignmentDetail,
+  isExplainMode,
+  onToggleExplainMode,
   onSelectAgv,
   onSelectTask,
   onSelectRoute,
@@ -67,9 +74,23 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
       {/* 3D Visual Key Legend */}
       <Legend3D />
 
-      {/* Interactive Camera Preset Controls Bar */}
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl shadow-2xl backdrop-blur-md">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 flex items-center gap-1">
+      {/* Interactive Camera & Explain Mode Bar */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl shadow-2xl backdrop-blur-md flex-wrap">
+        <button
+          onClick={onToggleExplainMode}
+          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+            isExplainMode
+              ? 'bg-amber-500 text-slate-950 shadow-lg font-extrabold animate-pulse'
+              : 'bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40'
+          }`}
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+          {isExplainMode ? 'EXIT EXPLAIN MODE' : 'EXPLAIN CURRENT OPTIMIZATION'}
+        </button>
+
+        <div className="h-4 w-[1px] bg-slate-800 my-auto"></div>
+
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-1">
           <Camera className="w-3.5 h-3.5 text-cyan-400" /> Camera:
         </span>
         <button
@@ -112,10 +133,11 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
         shadows
         camera={{ position: [0, 45, 55], fov: 50 }}
         gl={{ antialias: true, alpha: false }}
-        onPointerMissed={() => {
-          // Clear selections on background click
-        }}
       >
+        {/* Explain Mode Dimmed Backdrop & Highlights */}
+        {isExplainMode && (
+          <ExplainMode3D assignmentDetail={assignmentDetail} nodes={nodes} />
+        )}
         {/* Lights Setup */}
         <ambientLight intensity={0.7} />
         <directionalLight

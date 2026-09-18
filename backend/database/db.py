@@ -30,6 +30,7 @@ class Database:
                     location TEXT NOT NULL,
                     battery REAL NOT NULL,
                     status TEXT NOT NULL,
+                    action_state TEXT DEFAULT 'IDLE',
                     speed REAL NOT NULL,
                     capacity REAL NOT NULL,
                     current_task TEXT,
@@ -50,6 +51,7 @@ class Database:
                     quantity REAL NOT NULL,
                     priority TEXT NOT NULL,
                     status TEXT NOT NULL,
+                    progress_percent REAL DEFAULT 0.0,
                     assigned_agv TEXT,
                     assigned_route TEXT,
                     created_at TEXT NOT NULL,
@@ -99,35 +101,35 @@ class Database:
 
             # Seed AGVs
             initial_agvs = [
-                ("AGV-01", "Titan AGV-01", "Storage-A", 92.0, "available", 1.5, 500.0, None, "[]", 0, 0.0, None),
-                ("AGV-02", "Falcon AGV-02", "Machine-01", 76.0, "available", 1.5, 500.0, None, "[]", 0, 0.0, None),
-                ("AGV-03", "Atlas AGV-03", "Storage-B", 48.0, "available", 1.5, 600.0, None, "[]", 0, 0.0, None),
-                ("AGV-04", "Spark AGV-04", "Charging-01", 31.0, "charging", 1.2, 400.0, None, "[]", 0, 0.0, None),
-                ("AGV-05", "Goliath AGV-05", "Storage-C", 85.0, "available", 1.5, 700.0, None, "[]", 0, 0.0, None),
-                ("AGV-06", "Vortex AGV-06", "Machine-03", 67.0, "available", 1.5, 500.0, None, "[]", 0, 0.0, None),
+                ("AGV-01", "Titan AGV-01", "Storage-A", 92.0, "available", "IDLE", 1.5, 500.0, None, "[]", 0, 0.0, None),
+                ("AGV-02", "Falcon AGV-02", "Machine-01", 76.0, "available", "IDLE", 1.5, 500.0, None, "[]", 0, 0.0, None),
+                ("AGV-03", "Atlas AGV-03", "Storage-B", 48.0, "available", "IDLE", 1.5, 600.0, None, "[]", 0, 0.0, None),
+                ("AGV-04", "Spark AGV-04", "Charging-01", 31.0, "charging", "CHARGING", 1.2, 400.0, None, "[]", 0, 0.0, None),
+                ("AGV-05", "Goliath AGV-05", "Storage-C", 85.0, "available", "IDLE", 1.5, 700.0, None, "[]", 0, 0.0, None),
+                ("AGV-06", "Vortex AGV-06", "Machine-03", 67.0, "available", "IDLE", 1.5, 500.0, None, "[]", 0, 0.0, None),
             ]
             cursor.executemany("""
-                INSERT INTO agvs (id, name, location, battery, status, speed, capacity, current_task, current_route, route_index, sub_progress, estimated_completion_time)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO agvs (id, name, location, battery, status, action_state, speed, capacity, current_task, current_route, route_index, sub_progress, estimated_completion_time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, initial_agvs)
 
             now_str = datetime.datetime.now().strftime("%H:%M:%S")
             # Seed 10 Tasks
             initial_tasks = [
-                ("TASK-001", "Storage-A", "Machine-01", "Steel Sheets", 150.0, "NORMAL", "pending", None, "[]", now_str, None, None),
-                ("TASK-002", "Storage-B", "Machine-02", "Aluminum Bars", 200.0, "HIGH", "pending", None, "[]", now_str, None, None),
-                ("TASK-003", "Storage-C", "Machine-03", "Copper Coils", 100.0, "HIGH", "pending", None, "[]", now_str, None, None),
-                ("TASK-004", "Machine-01", "Prod-01", "Processed Assemblies", 120.0, "URGENT", "pending", None, "[]", now_str, None, None),
-                ("TASK-005", "Storage-A", "Machine-03", "Plastic Resin", 80.0, "NORMAL", "pending", None, "[]", now_str, None, None),
-                ("TASK-006", "Storage-B", "Machine-01", "Fasteners", 50.0, "NORMAL", "pending", None, "[]", now_str, None, None),
-                ("TASK-007", "Machine-02", "Prod-02", "Sub-Assemblies", 180.0, "HIGH", "pending", None, "[]", now_str, None, None),
-                ("TASK-008", "Storage-C", "Machine-02", "Electronic Components", 90.0, "NORMAL", "pending", None, "[]", now_str, None, None),
-                ("TASK-009", "Machine-03", "Prod-02", "Heavy Castings", 400.0, "NORMAL", "pending", None, "[]", now_str, None, None),
-                ("TASK-010", "Storage-A", "Prod-01", "Packaging Material", 100.0, "NORMAL", "pending", None, "[]", now_str, None, None),
+                ("TASK-001", "Storage-A", "Machine-01", "Steel Sheets", 150.0, "NORMAL", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-002", "Storage-B", "Machine-02", "Aluminum Bars", 200.0, "HIGH", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-003", "Storage-C", "Machine-03", "Copper Coils", 100.0, "HIGH", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-004", "Machine-01", "Prod-01", "Processed Assemblies", 120.0, "URGENT", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-005", "Storage-A", "Machine-03", "Plastic Resin", 80.0, "NORMAL", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-006", "Storage-B", "Machine-01", "Fasteners", 50.0, "NORMAL", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-007", "Machine-02", "Prod-02", "Sub-Assemblies", 180.0, "HIGH", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-008", "Storage-C", "Machine-02", "Electronic Components", 90.0, "NORMAL", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-009", "Machine-03", "Prod-02", "Heavy Castings", 400.0, "NORMAL", "pending", 0.0, None, "[]", now_str, None, None),
+                ("TASK-010", "Storage-A", "Prod-01", "Packaging Material", 100.0, "NORMAL", "pending", 0.0, None, "[]", now_str, None, None),
             ]
             cursor.executemany("""
-                INSERT INTO tasks (id, source, destination, material, quantity, priority, status, assigned_agv, assigned_route, created_at, estimated_time, reason)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tasks (id, source, destination, material, quantity, priority, status, progress_percent, assigned_agv, assigned_route, created_at, estimated_time, reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, initial_tasks)
 
             # Seed initial activity logs
@@ -156,10 +158,10 @@ class Database:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE agvs
-                SET name=?, location=?, battery=?, status=?, speed=?, capacity=?, current_task=?, current_route=?, route_index=?, sub_progress=?, estimated_completion_time=?
+                SET name=?, location=?, battery=?, status=?, action_state=?, speed=?, capacity=?, current_task=?, current_route=?, route_index=?, sub_progress=?, estimated_completion_time=?
                 WHERE id=?
             """, (
-                agv.name, agv.location, agv.battery, status_val, agv.speed, agv.capacity,
+                agv.name, agv.location, agv.battery, status_val, agv.action_state, agv.speed, agv.capacity,
                 agv.current_task, json.dumps(agv.current_route), agv.route_index, agv.sub_progress,
                 agv.estimated_completion_time, agv.id
             ))
@@ -181,11 +183,11 @@ class Database:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO tasks (id, source, destination, material, quantity, priority, status, assigned_agv, assigned_route, created_at, estimated_time, reason)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tasks (id, source, destination, material, quantity, priority, status, progress_percent, assigned_agv, assigned_route, created_at, estimated_time, reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 task.id, task.source, task.destination, task.material, task.quantity,
-                task.priority.value, task.status.value, task.assigned_agv,
+                task.priority.value, task.status.value, task.progress_percent, task.assigned_agv,
                 json.dumps(task.assigned_route), task.created_at, task.estimated_time, task.reason
             ))
             conn.commit()
@@ -197,11 +199,11 @@ class Database:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE tasks
-                SET source=?, destination=?, material=?, quantity=?, priority=?, status=?, assigned_agv=?, assigned_route=?, estimated_time=?, reason=?
+                SET source=?, destination=?, material=?, quantity=?, priority=?, status=?, progress_percent=?, assigned_agv=?, assigned_route=?, estimated_time=?, reason=?
                 WHERE id=?
             """, (
                 task.source, task.destination, task.material, task.quantity,
-                prio_val, status_val, task.assigned_agv,
+                prio_val, status_val, task.progress_percent, task.assigned_agv,
                 json.dumps(task.assigned_route), task.estimated_time, task.reason, task.id
             ))
             conn.commit()

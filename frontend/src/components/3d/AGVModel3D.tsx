@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import type { AGV } from '../../types/smartagv';
+import { CargoBox3D } from './CargoBox3D';
 import * as THREE from 'three';
 
 interface AGVModel3DProps {
@@ -25,9 +26,10 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const beaconRef = useRef<THREE.Mesh>(null);
+  const wheelRefs = useRef<THREE.Mesh[]>([]);
 
-  // Animate beacon pulse for busy/offline/charging
-  useFrame((state) => {
+  // Animate beacon pulse & rotating wheels during motion
+  useFrame((state, delta) => {
     if (beaconRef.current) {
       if (agv.status === 'offline') {
         const scale = 1.0 + Math.sin(state.clock.elapsedTime * 8) * 0.3;
@@ -36,6 +38,13 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
         const scale = 1.0 + Math.sin(state.clock.elapsedTime * 4) * 0.15;
         beaconRef.current.scale.set(scale, scale, scale);
       }
+    }
+
+    // Rotate wheels when AGV is moving
+    if (agv.status === 'busy' && agv.current_route && agv.current_route.length >= 2) {
+      wheelRefs.current.forEach(w => {
+        if (w) w.rotation.x += delta * 6;
+      });
     }
   });
 
@@ -93,7 +102,14 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
       {/* 4 Rubber Wheels */}
       {[-1.1, 1.1].map((x, xi) =>
         [-1.0, 1.0].map((z, zi) => (
-          <mesh key={`${xi}-${zi}`} position={[x, 0.3, z]} rotation={[0, 0, Math.PI / 2]}>
+          <mesh
+            key={`${xi}-${zi}`}
+            ref={(el) => {
+              if (el) wheelRefs.current[xi * 2 + zi] = el;
+            }}
+            position={[x, 0.3, z]}
+            rotation={[0, 0, Math.PI / 2]}
+          >
             <cylinderGeometry args={[0.3, 0.3, 0.3, 16]} />
             <meshStandardMaterial color="#1e293b" roughness={0.8} />
           </mesh>
@@ -118,10 +134,7 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
 
       {/* Cargo Payload (visible when busy / carrying material) */}
       {agv.status === 'busy' && (
-        <mesh position={[0, 1.4, 0]}>
-          <boxGeometry args={[1.8, 0.7, 1.8]} />
-          <meshStandardMaterial color="#d97706" metalness={0.3} roughness={0.6} />
-        </mesh>
+        <CargoBox3D position={[0, 1.1, 0]} color="#d97706" scale={0.9} />
       )}
 
       {/* Minimal 3D Badge / Full Telemetry on Hover/Select */}
@@ -166,7 +179,7 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
             /* Minimal Floating ID Badge */
             <div className="bg-slate-950/80 border border-slate-800 text-slate-200 px-2 py-0.5 rounded-full font-mono text-[10px] font-bold shadow-lg flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getBeaconColor() }}></span>
-              {agv.id}
+              {agv.id} ({Math.round(agv.battery)}%)
             </div>
           )}
         </div>
