@@ -15,32 +15,32 @@ class FactoryGraphEngine:
         self.nodes_dict.clear()
         self.edges_dict.clear()
 
-        # Nodes configuration with 2D positions (x, y) suitable for a clean SVG layout (1000 x 600 canvas)
+        # Nodes configuration with 3D world coordinates (x=horizontal, y=height=0 floor level, z=depth)
         nodes_data = [
             # Storage Area (Left Column)
-            FactoryNode(id="Storage-A", name="Storage A", type="storage", pos=NodePos(x=100, y=100)),
-            FactoryNode(id="Storage-B", name="Storage B", type="storage", pos=NodePos(x=100, y=300)),
-            FactoryNode(id="Storage-C", name="Storage C", type="storage", pos=NodePos(x=100, y=500)),
+            FactoryNode(id="Storage-A", name="Storage A", type="storage", pos=NodePos(x=-28.0, y=0.0, z=-16.0)),
+            FactoryNode(id="Storage-B", name="Storage B", type="storage", pos=NodePos(x=-28.0, y=0.0, z=0.0)),
+            FactoryNode(id="Storage-C", name="Storage C", type="storage", pos=NodePos(x=-28.0, y=0.0, z=16.0)),
             
             # Intersections
-            FactoryNode(id="N1", name="Junction N1", type="intersection", pos=NodePos(x=300, y=100)),
-            FactoryNode(id="N2", name="Junction N2", type="intersection", pos=NodePos(x=550, y=100)),
-            FactoryNode(id="N3", name="Junction N3", type="intersection", pos=NodePos(x=300, y=300)),
-            FactoryNode(id="N4", name="Junction N4", type="intersection", pos=NodePos(x=550, y=300)),
-            FactoryNode(id="N5", name="Junction N5", type="intersection", pos=NodePos(x=300, y=500)),
-            FactoryNode(id="N6", name="Junction N6", type="intersection", pos=NodePos(x=550, y=500)),
+            FactoryNode(id="N1", name="Junction N1", type="intersection", pos=NodePos(x=-12.0, y=0.0, z=-16.0)),
+            FactoryNode(id="N2", name="Junction N2", type="intersection", pos=NodePos(x=10.0, y=0.0, z=-16.0)),
+            FactoryNode(id="N3", name="Junction N3", type="intersection", pos=NodePos(x=-12.0, y=0.0, z=0.0)),
+            FactoryNode(id="N4", name="Junction N4", type="intersection", pos=NodePos(x=10.0, y=0.0, z=0.0)),
+            FactoryNode(id="N5", name="Junction N5", type="intersection", pos=NodePos(x=-12.0, y=0.0, z=16.0)),
+            FactoryNode(id="N6", name="Junction N6", type="intersection", pos=NodePos(x=10.0, y=0.0, z=16.0)),
 
             # Machines (Middle Right)
-            FactoryNode(id="Machine-01", name="Machine 1", type="machine", pos=NodePos(x=780, y=100)),
-            FactoryNode(id="Machine-02", name="Machine 2", type="machine", pos=NodePos(x=780, y=300)),
-            FactoryNode(id="Machine-03", name="Machine 3", type="machine", pos=NodePos(x=780, y=500)),
+            FactoryNode(id="Machine-01", name="Machine 1", type="machine", pos=NodePos(x=26.0, y=0.0, z=-16.0)),
+            FactoryNode(id="Machine-02", name="Machine 2", type="machine", pos=NodePos(x=26.0, y=0.0, z=0.0)),
+            FactoryNode(id="Machine-03", name="Machine 3", type="machine", pos=NodePos(x=26.0, y=0.0, z=16.0)),
 
             # Production Stations (Far Right)
-            FactoryNode(id="Prod-01", name="Production 1", type="production", pos=NodePos(x=920, y=200)),
-            FactoryNode(id="Prod-02", name="Production 2", type="production", pos=NodePos(x=920, y=400)),
+            FactoryNode(id="Prod-01", name="Production 1", type="production", pos=NodePos(x=38.0, y=0.0, z=-8.0)),
+            FactoryNode(id="Prod-02", name="Production 2", type="production", pos=NodePos(x=38.0, y=0.0, z=8.0)),
 
             # Charging Station (Bottom Center)
-            FactoryNode(id="Charging-01", name="Charging Hub", type="charging", pos=NodePos(x=425, y=560)),
+            FactoryNode(id="Charging-01", name="Charging Hub", type="charging", pos=NodePos(x=-1.0, y=0.0, z=22.0)),
         ]
 
         for node in nodes_data:

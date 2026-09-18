@@ -22,7 +22,8 @@ class TaskStatus(str, Enum):
 
 class NodePos(BaseModel):
     x: float
-    y: float
+    y: float = 0.0  # Height / Elevation (Y=0 floor level)
+    z: float = 0.0  # Depth position
 
 class FactoryNode(BaseModel):
     id: str

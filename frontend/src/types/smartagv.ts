@@ -5,6 +5,7 @@ export type TaskStatus = 'pending' | 'assigned' | 'in_progress' | 'completed' | 
 export interface NodePos {
   x: number;
   y: number;
+  z?: number;
 }
 
 export interface FactoryNode {

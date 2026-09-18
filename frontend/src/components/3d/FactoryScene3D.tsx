@@ -1,0 +1,181 @@
+import React, { useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import type { FactoryNode, FactoryEdge, AGV, Task } from '../../types/smartagv';
+import { FactoryEnvironment3D } from './FactoryEnvironment3D';
+import { StorageArea3D } from './StorageArea3D';
+import { Machine3D } from './Machine3D';
+import { ChargingStation3D } from './ChargingStation3D';
+import { RouteVisualization3D } from './RouteVisualization3D';
+import { AGVFleet3D } from './AGVFleet3D';
+import { TaskMarker3D } from './TaskMarker3D';
+import { CameraControls3D } from './CameraControls3D';
+import { Legend3D } from './Legend3D';
+import { Camera, Eye, RotateCcw, Crosshair } from 'lucide-react';
+
+interface FactoryScene3DProps {
+  nodes: FactoryNode[];
+  edges: FactoryEdge[];
+  agvs: AGV[];
+  tasks: Task[];
+  selectedAgvId: string | null;
+  selectedTaskId: string | null;
+  onSelectAgv: (agvId: string) => void;
+  onSelectTask: (taskId: string) => void;
+  onSelectRoute: (source: string, target: string) => void;
+  onSelectNode: (nodeId: string) => void;
+}
+
+export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
+  nodes,
+  edges,
+  agvs,
+  tasks,
+  selectedAgvId,
+  selectedTaskId,
+  onSelectAgv,
+  onSelectTask,
+  onSelectRoute,
+  onSelectNode
+}) => {
+  const [cameraMode, setCameraMode] = useState<'reset' | 'top' | 'iso' | 'follow'>('reset');
+  const [hoveredAgvId, setHoveredAgvId] = useState<string | null>(null);
+
+  // Compute active route edges for selected AGV or Task
+  const activeRouteEdges = new Set<string>();
+  if (selectedAgvId) {
+    const targetAgv = agvs.find(a => a.id === selectedAgvId);
+    if (targetAgv && targetAgv.current_route) {
+      for (let i = 0; i < targetAgv.current_route.length - 1; i++) {
+        const u = targetAgv.current_route[i];
+        const v = targetAgv.current_route[i + 1];
+        activeRouteEdges.add([u, v].sort().join('::'));
+      }
+    }
+  } else if (selectedTaskId) {
+    const targetTask = tasks.find(t => t.id === selectedTaskId);
+    if (targetTask && targetTask.assigned_route) {
+      for (let i = 0; i < targetTask.assigned_route.length - 1; i++) {
+        const u = targetTask.assigned_route[i];
+        const v = targetTask.assigned_route[i + 1];
+        activeRouteEdges.add([u, v].sort().join('::'));
+      }
+    }
+  }
+
+  return (
+    <div className="relative w-full aspect-[16/9] min-h-[480px] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
+      {/* 3D Visual Key Legend */}
+      <Legend3D />
+
+      {/* Interactive Camera Preset Controls Bar */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl shadow-2xl backdrop-blur-md">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 flex items-center gap-1">
+          <Camera className="w-3.5 h-3.5 text-cyan-400" /> Camera:
+        </span>
+        <button
+          onClick={() => setCameraMode('reset')}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+            cameraMode === 'reset' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800'
+          }`}
+        >
+          <RotateCcw className="w-3 h-3" /> Reset
+        </button>
+        <button
+          onClick={() => setCameraMode('top')}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+            cameraMode === 'top' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800'
+          }`}
+        >
+          <Eye className="w-3 h-3" /> Top View
+        </button>
+        <button
+          onClick={() => setCameraMode('iso')}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+            cameraMode === 'iso' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800'
+          }`}
+        >
+          Isometric
+        </button>
+        <button
+          onClick={() => setCameraMode('follow')}
+          disabled={!selectedAgvId}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1 disabled:opacity-40 ${
+            cameraMode === 'follow' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800'
+          }`}
+        >
+          <Crosshair className="w-3 h-3" /> Follow AGV
+        </button>
+      </div>
+
+      {/* R3F WebGL 3D Canvas */}
+      <Canvas
+        shadows
+        camera={{ position: [0, 45, 55], fov: 50 }}
+        gl={{ antialias: true, alpha: false }}
+        onPointerMissed={() => {
+          // Clear selections on background click
+        }}
+      >
+        {/* Lights Setup */}
+        <ambientLight intensity={0.7} />
+        <directionalLight
+          position={[30, 50, 40]}
+          intensity={1.2}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+        />
+        <pointLight position={[-30, 25, -20]} intensity={0.5} color="#38bdf8" />
+        <pointLight position={[30, 25, 20]} intensity={0.5} color="#a855f7" />
+
+        {/* Camera Rig Controls */}
+        <CameraControls3D
+          mode={cameraMode}
+          selectedAgvId={selectedAgvId}
+          agvs={agvs}
+          nodes={nodes}
+        />
+
+        {/* 3D Factory Floor Environment */}
+        <FactoryEnvironment3D />
+
+        {/* 3D Roads & Route Path Visualizations */}
+        <RouteVisualization3D
+          edges={edges}
+          nodes={nodes}
+          activeRouteEdges={activeRouteEdges}
+          onSelectRoute={onSelectRoute}
+        />
+
+        {/* 3D Stations (Storage, Machines, Production, Charging) */}
+        {nodes.map((node) => {
+          if (node.type === 'storage') {
+            return <StorageArea3D key={node.id} node={node} onSelectNode={onSelectNode} />;
+          }
+          if (node.type === 'machine' || node.type === 'production') {
+            return <Machine3D key={node.id} node={node} onSelectNode={onSelectNode} />;
+          }
+          if (node.type === 'charging') {
+            return <ChargingStation3D key={node.id} node={node} onSelectNode={onSelectNode} />;
+          }
+          return null;
+        })}
+
+        {/* 3D Task Beacons */}
+        {tasks.map((task) => (
+          <TaskMarker3D key={task.id} task={task} nodes={nodes} onSelectTask={onSelectTask} />
+        ))}
+
+        {/* 3D AGV Fleet */}
+        <AGVFleet3D
+          agvs={agvs}
+          nodes={nodes}
+          selectedAgvId={selectedAgvId}
+          hoveredAgvId={hoveredAgvId}
+          onSelectAgv={onSelectAgv}
+          onHoverAgv={setHoveredAgvId}
+        />
+      </Canvas>
+    </div>
+  );
+};

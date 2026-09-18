@@ -1,13 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import type {
   AGV, Task, FactoryNode, FactoryEdge, OptimizationResult, BeforeAfterDiff,
-  ActivityLog, SimulationMetrics, SimulationState
+  ActivityLog, SimulationMetrics, SimulationState, TaskAssignmentDetail
 } from './types/smartagv';
 import { api } from './services/api';
 
 import { Header } from './components/Header';
 import { KPICards } from './components/KPICards';
-import { FactoryMap } from './components/FactoryMap';
+import { FactoryScene3D } from './components/3d/FactoryScene3D';
+import { InspectorPanel3D } from './components/3d/InspectorPanel3D';
+import { ReoptimizationOverlay } from './components/3d/ReoptimizationOverlay';
 import { AGVPanel } from './components/AGVPanel';
 import { TaskPanel } from './components/TaskPanel';
 import { OptimizationExplanationPanel } from './components/OptimizationExplanationPanel';
@@ -25,6 +27,7 @@ export function App() {
   const [optResult, setOptResult] = useState<OptimizationResult | null>(null);
   const [lastOptTime, setLastOptTime] = useState<string>('');
   const [diffs, setDiffs] = useState<BeforeAfterDiff[]>([]);
+  const [latestDiff, setLatestDiff] = useState<BeforeAfterDiff | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [metrics, setMetrics] = useState<SimulationMetrics | null>(null);
   const [simState, setSimState] = useState<SimulationState>({
@@ -36,7 +39,11 @@ export function App() {
 
   const [selectedAgvId, setSelectedAgvId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedEdgeKey, setSelectedEdgeKey] = useState<{ source: string; target: string } | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
+  const [triggerOverlayReason, setTriggerOverlayReason] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Fetch all factory state data from FastAPI backend
@@ -59,6 +66,10 @@ export function App() {
       setEdges(graphData.edges);
       setOptResult(optData.result);
       setLastOptTime(optData.last_optimization_time);
+
+      if (diffList.length > 0 && JSON.stringify(diffList[0]) !== JSON.stringify(latestDiff)) {
+        setLatestDiff(diffList[0]);
+      }
       setDiffs(diffList);
       setLogs(logList);
       setMetrics(metricsData);
@@ -68,7 +79,7 @@ export function App() {
       console.error('Error fetching factory state:', err);
       setErrorMsg('Failed to connect to SmartAGV Backend Engine at http://localhost:8000.');
     }
-  }, []);
+  }, [latestDiff]);
 
   // Poll state every 800ms
   useEffect(() => {
@@ -77,85 +88,33 @@ export function App() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const handleManualOptimize = async () => {
+  const handleTriggerEvent = async (actionFn: () => Promise<any>, reason: string) => {
     setIsOptimizing(true);
+    setTriggerOverlayReason(reason);
     try {
-      await api.triggerOptimize();
+      await actionFn();
       await fetchData();
     } finally {
       setIsOptimizing(false);
     }
   };
 
-  const handleCreateTask = async (payload: { source: string; destination: string; material: string; quantity: number; priority: string }) => {
-    setIsOptimizing(true);
-    try {
-      await api.createTask(payload);
-      await fetchData();
-    } finally {
-      setIsOptimizing(false);
-    }
-  };
+  const selectedAgv = selectedAgvId ? agvs.find(a => a.id === selectedAgvId) || null : null;
+  const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) || null : null;
+  const selectedEdge = selectedEdgeKey ? edges.find(e => [e.source, e.target].sort().join('::') === [selectedEdgeKey.source, selectedEdgeKey.target].sort().join('::')) || null : null;
+  const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) || null : null;
 
-  const handleSimulateAGVFailure = async (agvId?: string) => {
-    setIsOptimizing(true);
-    try {
-      await api.triggerAGVFailure(agvId);
-      await fetchData();
-    } finally {
-      setIsOptimizing(false);
+  let activeAssignmentDetail: TaskAssignmentDetail | null = null;
+  if (optResult && optResult.assignments) {
+    if (selectedTaskId) {
+      activeAssignmentDetail = optResult.assignments.find(a => a.task_id === selectedTaskId) || null;
+    } else if (selectedAgvId) {
+      activeAssignmentDetail = optResult.assignments.find(a => a.assigned_agv === selectedAgvId) || null;
     }
-  };
-
-  const handleCreateUrgentTask = async () => {
-    setIsOptimizing(true);
-    try {
-      await api.triggerUrgentTask();
-      await fetchData();
-    } finally {
-      setIsOptimizing(false);
+    if (!activeAssignmentDetail && optResult.assignments.length > 0) {
+      activeAssignmentDetail = optResult.assignments[0];
     }
-  };
-
-  const handleSimulateCongestion = async (source: string, target: string, congestion: number) => {
-    setIsOptimizing(true);
-    try {
-      await api.triggerCongestion(source, target, congestion);
-      await fetchData();
-    } finally {
-      setIsOptimizing(false);
-    }
-  };
-
-  const handleBlockRoute = async (source: string, target: string, blocked: boolean) => {
-    setIsOptimizing(true);
-    try {
-      await api.triggerBlockRoute(source, target, blocked);
-      await fetchData();
-    } finally {
-      setIsOptimizing(false);
-    }
-  };
-
-  const handleSimulateBatteryDrain = async (agvId?: string) => {
-    setIsOptimizing(true);
-    try {
-      await api.triggerBatteryDrain(agvId, 50.0);
-      await fetchData();
-    } finally {
-      setIsOptimizing(false);
-    }
-  };
-
-  const handleSimulationControl = async (action: string, speed?: number) => {
-    try {
-      const newState = await api.controlSimulation(action, speed);
-      setSimState(newState);
-      fetchData();
-    } catch (err) {
-      console.error('Failed to control simulation:', err);
-    }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
@@ -164,51 +123,96 @@ export function App() {
         simTime={simState.sim_time}
         lastOptTime={lastOptTime}
         isOptimizing={isOptimizing}
-        onManualOptimize={handleManualOptimize}
+        onManualOptimize={() => handleTriggerEvent(() => api.triggerOptimize(), 'Manual User Trigger')}
       />
 
       {errorMsg && (
         <div className="bg-red-950 border-b border-red-800 text-red-200 px-6 py-2.5 text-xs text-center font-medium">
-          {errorMsg} Please ensure the backend is running via <code className="bg-red-900 px-1.5 py-0.5 rounded">python -m uvicorn backend.main:app --port 8000</code>.
+          {errorMsg} Please ensure backend is running via <code className="bg-red-900 px-1.5 py-0.5 rounded">python -m uvicorn backend.main:app --port 8000</code>.
         </div>
       )}
 
-      <main className="flex-1 p-6 space-y-6 max-w-[1600px] w-full mx-auto">
+      {/* Prominent "RE-OPTIMIZATION TRIGGERED" Overlay */}
+      {triggerOverlayReason && (
+        <ReoptimizationOverlay
+          latestDiff={latestDiff}
+          triggerReason={triggerOverlayReason}
+          onClose={() => setTriggerOverlayReason(null)}
+        />
+      )}
+
+      <main className="flex-1 p-6 space-y-6 max-w-[1700px] w-full mx-auto">
         {/* KPI Cards Row */}
         <KPICards agvs={agvs} tasks={tasks} edges={edges} />
 
         {/* Hackathon Demo Event Trigger Panel */}
         <DynamicEventPanel
-          onSimulateAGVFailure={() => handleSimulateAGVFailure(selectedAgvId || undefined)}
-          onCreateUrgentTask={handleCreateUrgentTask}
-          onSimulateCongestion={handleSimulateCongestion}
-          onSimulateBatteryDrain={() => handleSimulateBatteryDrain(selectedAgvId || undefined)}
-          onBlockRoute={handleBlockRoute}
+          onSimulateAGVFailure={() => handleTriggerEvent(() => api.triggerAGVFailure(selectedAgvId || undefined), 'Simulated AGV Failure')}
+          onCreateUrgentTask={() => handleTriggerEvent(() => api.triggerUrgentTask(), 'New Urgent Task Created')}
+          onSimulateCongestion={(s, t, c) => handleTriggerEvent(() => api.triggerCongestion(s, t, c), 'Route Congestion Spike')}
+          onSimulateBatteryDrain={() => handleTriggerEvent(() => api.triggerBatteryDrain(selectedAgvId || undefined, 50.0), 'AGV Battery Drain')}
+          onBlockRoute={(s, t, b) => handleTriggerEvent(() => api.triggerBlockRoute(s, t, b), b ? 'Route Blocked' : 'Route Unblocked')}
         />
 
         {/* Simulation Controls */}
-        <SimulationControls state={simState} onControl={handleSimulationControl} />
+        <SimulationControls state={simState} onControl={(act, spd) => api.controlSimulation(act, spd).then(setSimState)} />
 
-        {/* Main Grid: Interactive Map + Decision Explainability */}
+        {/* Main Grid: Interactive 3D Viewport + Decision Inspector */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Interactive 2D Factory Map + Before/After Diffs */}
-          <div className="lg:col-span-7 space-y-6">
-            <FactoryMap
+          {/* Left Column: Interactive 3D Scene + Before/After Diffs */}
+          <div className="lg:col-span-8 space-y-6">
+            <FactoryScene3D
               nodes={nodes}
               edges={edges}
               agvs={agvs}
               tasks={tasks}
               selectedAgvId={selectedAgvId}
               selectedTaskId={selectedTaskId}
-              onSelectAgv={(id) => setSelectedAgvId(id === selectedAgvId ? null : id)}
-              onSelectTask={(id) => setSelectedTaskId(id === selectedTaskId ? null : id)}
+              onSelectAgv={(id) => {
+                setSelectedAgvId(id === selectedAgvId ? null : id);
+                setSelectedTaskId(null);
+                setSelectedEdgeKey(null);
+                setSelectedNodeId(null);
+              }}
+              onSelectTask={(id) => {
+                setSelectedTaskId(id === selectedTaskId ? null : id);
+                setSelectedAgvId(null);
+                setSelectedEdgeKey(null);
+                setSelectedNodeId(null);
+              }}
+              onSelectRoute={(s, t) => {
+                setSelectedEdgeKey({ source: s, target: t });
+                setSelectedAgvId(null);
+                setSelectedTaskId(null);
+                setSelectedNodeId(null);
+              }}
+              onSelectNode={(id) => {
+                setSelectedNodeId(id === selectedNodeId ? null : id);
+                setSelectedAgvId(null);
+                setSelectedTaskId(null);
+                setSelectedEdgeKey(null);
+              }}
             />
 
             <BeforeAfterOptimizationView diffs={diffs} />
           </div>
 
-          {/* Right Column: Optimization Engine Explainability Panel */}
-          <div className="lg:col-span-5 space-y-6">
+          {/* Right Column: Inspector Side Drawer + Optimization Explanation + Logs */}
+          <div className="lg:col-span-4 space-y-6">
+            <InspectorPanel3D
+              selectedAgv={selectedAgv}
+              selectedTask={selectedTask}
+              selectedEdge={selectedEdge}
+              selectedNode={selectedNode}
+              assignmentDetail={activeAssignmentDetail}
+              onClose={() => {
+                setSelectedAgvId(null);
+                setSelectedTaskId(null);
+                setSelectedEdgeKey(null);
+                setSelectedNodeId(null);
+              }}
+            />
+
             <OptimizationExplanationPanel
               optimizationResult={optResult}
               selectedTaskId={selectedTaskId}
@@ -218,30 +222,30 @@ export function App() {
           </div>
         </div>
 
-        {/* Fleet & Task Panels */}
+        {/* Fleet Status & Task Management Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AGVPanel
             agvs={agvs}
             selectedAgvId={selectedAgvId}
             onSelectAgv={(id) => setSelectedAgvId(id === selectedAgvId ? null : id)}
-            onDrainBattery={(id) => handleSimulateBatteryDrain(id)}
-            onSimulateFailure={(id) => handleSimulateAGVFailure(id)}
+            onDrainBattery={(id) => handleTriggerEvent(() => api.triggerBatteryDrain(id, 50.0), `Battery Drain on ${id}`)}
+            onSimulateFailure={(id) => handleTriggerEvent(() => api.triggerAGVFailure(id), `AGV ${id} Set Offline`)}
           />
 
           <TaskPanel
             tasks={tasks}
             selectedTaskId={selectedTaskId}
             onSelectTask={(id) => setSelectedTaskId(id === selectedTaskId ? null : id)}
-            onCreateTask={handleCreateTask}
+            onCreateTask={(p) => handleTriggerEvent(() => api.createTask(p), `New Task Created (${p.material})`)}
           />
         </div>
 
-        {/* Analytics & Performance Charts */}
+        {/* Analytics & Performance Metrics */}
         <AnalyticsPanel metrics={metrics} />
       </main>
 
       <footer className="border-t border-slate-800 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500">
-        SmartAGV Optimization System · Built with React, Vite, TypeScript, Tailwind CSS, Python, FastAPI, and NetworkX.
+        SmartAGV 3D Optimization System · Powered by React Three Fiber, Three.js, Drei, Python FastAPI, and NetworkX.
       </footer>
     </div>
   );
