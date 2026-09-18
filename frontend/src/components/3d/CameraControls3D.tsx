@@ -28,14 +28,14 @@ export const CameraControls3D: React.FC<CameraControlsProps> = ({
     if (!controlsRef.current) return;
 
     if (mode === 'reset') {
-      camera.position.set(0, 45, 55);
-      controlsRef.current.target.set(0, 0, 0);
+      camera.position.set(3, 30, 38);
+      controlsRef.current.target.set(3, 0, 0);
     } else if (mode === 'top') {
-      camera.position.set(0, 75, 0.1);
-      controlsRef.current.target.set(0, 0, 0);
+      camera.position.set(3, 52, 0.1);
+      controlsRef.current.target.set(3, 0, 0);
     } else if (mode === 'iso') {
-      camera.position.set(45, 35, 45);
-      controlsRef.current.target.set(0, 0, 0);
+      camera.position.set(35, 26, 32);
+      controlsRef.current.target.set(3, 0, 0);
     }
     controlsRef.current.update();
   }, [mode, camera]);
@@ -63,7 +63,7 @@ export const CameraControls3D: React.FC<CameraControlsProps> = ({
           }
         }
 
-        controlsRef.current.target.lerp(new THREE.Vector3(agvX, 0, agvZ), 0.1);
+        controlsRef.current.target.lerp(new THREE.Vector3(agvX, 0.5, agvZ), 0.1);
         controlsRef.current.update();
       }
     }
@@ -73,8 +73,8 @@ export const CameraControls3D: React.FC<CameraControlsProps> = ({
     <OrbitControls
       ref={controlsRef}
       makeDefault
-      minDistance={15}
-      maxDistance={120}
+      minDistance={8}
+      maxDistance={70}
       maxPolarAngle={Math.PI / 2 - 0.05} // Prevent camera from going under factory floor
       enableDamping
       dampingFactor={0.05}
