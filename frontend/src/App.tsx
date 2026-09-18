@@ -83,7 +83,7 @@ export function App() {
       setErrorMsg(null);
     } catch (err: any) {
       console.error('Error fetching factory state:', err);
-      setErrorMsg('Failed to connect to SmartAGV Backend Engine at http://localhost:8000.');
+      setErrorMsg('Failed to connect to SmartAGV Backend Engine.');
     }
   }, [latestDiff]);
 
@@ -134,7 +134,7 @@ export function App() {
 
       {errorMsg && (
         <div className="bg-red-950 border-b border-red-800 text-red-200 px-6 py-2.5 text-xs text-center font-medium">
-          {errorMsg} Please ensure backend is running via <code className="bg-red-900 px-1.5 py-0.5 rounded">python -m uvicorn backend.main:app --port 8000</code>.
+          {errorMsg} For local development, run <code className="bg-red-900 px-1.5 py-0.5 rounded">python -m uvicorn backend.main:app --port 8000</code>. For Vercel deployment, configure <code className="bg-red-900 px-1.5 py-0.5 rounded">VITE_API_URL</code> environment variable in your Vercel Project Settings.
         </div>
       )}
 

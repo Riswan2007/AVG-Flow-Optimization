@@ -5,7 +5,13 @@ import datetime
 from typing import List, Dict, Optional, Tuple, Any
 from backend.models.schemas import AGV, Task, AGVStatus, TaskPriority, TaskStatus, ActivityLog, BeforeAfterDiff, SimulationMetrics
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "smartagv.db")
+import tempfile
+
+# Support Vercel serverless environment and read-only filesystems
+if os.environ.get("VERCEL") or not os.access(os.path.dirname(__file__), os.W_OK):
+    DB_PATH = os.path.join(tempfile.gettempdir(), "smartagv.db")
+else:
+    DB_PATH = os.path.join(os.path.dirname(__file__), "smartagv.db")
 
 class Database:
     def __init__(self, db_path: str = DB_PATH):
