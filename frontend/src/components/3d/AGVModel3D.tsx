@@ -91,44 +91,44 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
         </mesh>
       )}
 
-      {/* Main AMR / AGV Chassis */}
-      <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
-        <boxGeometry args={[2.4, 0.8, 3.2]} />
+      {/* Main AMR / AGV Chassis (Width=2.5, Height=0.8, Length=3.6) */}
+      <mesh position={[0, 0.7, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2.5, 0.8, 3.6]} />
         <meshStandardMaterial color={isSelected ? "#1e293b" : "#0f172a"} metalness={0.7} roughness={0.3} />
       </mesh>
 
       {/* Top Protective Bumper / Edge Strip */}
-      <mesh position={[0, 1.05, 0]}>
-        <boxGeometry args={[2.45, 0.1, 3.25]} />
+      <mesh position={[0, 1.15, 0]}>
+        <boxGeometry args={[2.55, 0.1, 3.65]} />
         <meshStandardMaterial color="#0284c7" emissive="#0284c7" emissiveIntensity={0.3} />
       </mesh>
 
-      {/* 4 Rubber Wheels */}
-      {[-1.1, 1.1].map((x, xi) =>
-        [-1.0, 1.0].map((z, zi) => (
+      {/* 4 Rubber Wheels Sitting ON Road Surface (Y=0.45) */}
+      {[-1.2, 1.2].map((x, xi) =>
+        [-1.1, 1.1].map((z, zi) => (
           <mesh
             key={`${xi}-${zi}`}
             ref={(el) => {
               if (el) wheelRefs.current[xi * 2 + zi] = el;
             }}
-            position={[x, 0.3, z]}
+            position={[x, 0.45, z]}
             rotation={[0, 0, Math.PI / 2]}
           >
-            <cylinderGeometry args={[0.3, 0.3, 0.3, 16]} />
+            <cylinderGeometry args={[0.45, 0.45, 0.35, 16]} />
             <meshStandardMaterial color="#1e293b" roughness={0.8} />
           </mesh>
         ))
       )}
 
       {/* LiDAR Scanner Cylinder */}
-      <mesh position={[0, 1.25, 1.1]}>
-        <cylinderGeometry args={[0.25, 0.25, 0.3, 16]} />
+      <mesh position={[0, 1.4, 1.3]}>
+        <cylinderGeometry args={[0.3, 0.3, 0.35, 16]} />
         <meshStandardMaterial color="#334155" metalness={0.9} />
       </mesh>
 
       {/* Status Light Beacon */}
-      <mesh ref={beaconRef} position={[0, 1.4, -1.0]}>
-        <sphereGeometry args={[0.25, 16, 16]} />
+      <mesh ref={beaconRef} position={[0, 1.55, -1.2]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
         <meshStandardMaterial
           color={getBeaconColor()}
           emissive={getBeaconColor()}
@@ -136,9 +136,9 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
         />
       </mesh>
 
-      {/* Cargo Payload (visible when busy / carrying material) */}
+      {/* Cargo Payload (visible when carrying material) */}
       {agv.status === 'busy' && (
-        <CargoBox3D position={[0, 1.1, 0]} color="#d97706" scale={0.9} />
+        <CargoBox3D position={[0, 1.3, 0]} color="#d97706" scale={1.1} />
       )}
 
       {/* Minimal 3D Badge / Full Telemetry on Hover/Select */}

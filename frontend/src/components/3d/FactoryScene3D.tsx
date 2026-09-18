@@ -158,7 +158,7 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
       {/* R3F WebGL 3D Canvas */}
       <Canvas
         shadows
-        camera={{ position: [3, 30, 38], fov: 42 }}
+        camera={{ position: [3.5, 32, 36], fov: 38 }}
         gl={{ antialias: true, alpha: false }}
       >
         {/* Explain Mode Dimmed Backdrop & Highlights */}

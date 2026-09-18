@@ -25,6 +25,19 @@ export const RouteVisualization3D: React.FC<RouteVisualization3DProps> = ({
 
   return (
     <group>
+      {/* Intersection Node Junction Pads */}
+      {nodes.map((n) => (
+        <mesh
+          key={`pad-${n.id}`}
+          position={[n.pos.x, 0.022, n.pos.z || 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          receiveShadow
+        >
+          <planeGeometry args={[5.0, 5.0]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.7} />
+        </mesh>
+      ))}
+
       {edges.map((edge) => {
         const uNode = nodeMap.get(edge.source);
         const vNode = nodeMap.get(edge.target);
@@ -54,26 +67,27 @@ export const RouteVisualization3D: React.FC<RouteVisualization3DProps> = ({
               onSelectRoute(edge.source, edge.target);
             }}
           >
-            {/* Base Industrial Asphalt Road Strip */}
+            {/* Base Industrial Asphalt Road Strip (Width = 4.2) */}
             <mesh
               position={[midX, 0.02, midZ]}
               rotation={[-Math.PI / 2, 0, angleY - Math.PI / 2]}
+              receiveShadow
             >
-              <planeGeometry args={[length, 2.4]} />
+              <planeGeometry args={[length, 4.2]} />
               <meshStandardMaterial
-                color={isBlocked ? "#450a0a" : isCongested ? "#451a03" : "#1e293b"}
+                color={isBlocked ? "#3f0707" : isCongested ? "#451a03" : "#0f172a"}
                 roughness={0.8}
               />
             </mesh>
 
-            {/* Road Centerline Strip */}
+            {/* Road White Dashed Centerline */}
             <mesh
               position={[midX, 0.03, midZ]}
               rotation={[-Math.PI / 2, 0, angleY - Math.PI / 2]}
             >
-              <planeGeometry args={[length, 0.2]} />
+              <planeGeometry args={[length, 0.25]} />
               <meshBasicMaterial
-                color={isBlocked ? "#ef4444" : isCongested ? "#f59e0b" : "#475569"}
+                color={isBlocked ? "#ef4444" : isCongested ? "#f59e0b" : "#e2e8f0"}
               />
             </mesh>
 
