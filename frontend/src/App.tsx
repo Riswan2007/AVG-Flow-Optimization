@@ -7,6 +7,7 @@ import { api } from './services/api';
 
 import { Header } from './components/Header';
 import { KPICards } from './components/KPICards';
+import { FactoryMap } from './components/FactoryMap';
 import { FactoryScene3D } from './components/3d/FactoryScene3D';
 import { InspectorPanel3D } from './components/3d/InspectorPanel3D';
 import { ReoptimizationOverlay } from './components/3d/ReoptimizationOverlay';
@@ -18,6 +19,7 @@ import { DynamicEventPanel } from './components/DynamicEventPanel';
 import { ActivityLogPanel } from './components/ActivityLogPanel';
 import { SimulationControls } from './components/SimulationControls';
 import { AnalyticsPanel } from './components/AnalyticsPanel';
+import { Layers, Box, LayoutGrid } from 'lucide-react';
 
 export function App() {
   const [agvs, setAgvs] = useState<AGV[]>([]);
@@ -36,6 +38,8 @@ export function App() {
     sim_time: 0.0,
     status: 'Paused'
   });
+
+  const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
 
   const [selectedAgvId, setSelectedAgvId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -157,42 +161,104 @@ export function App() {
         {/* Simulation Controls */}
         <SimulationControls state={simState} onControl={(act, spd) => api.controlSimulation(act, spd).then(setSimState)} />
 
-        {/* Main Grid: Interactive 3D Viewport + Decision Inspector */}
+        {/* View Mode Toggle Switch (2D SVG vs 3D WebGL) */}
+        <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-xl p-3 px-5 shadow-lg backdrop-blur-md">
+          <div className="flex items-center gap-2.5">
+            <Layers className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+              Factory Material Movement Viewport ({viewMode} View)
+            </h2>
+          </div>
+
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+            <button
+              onClick={() => setViewMode('2D')}
+              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                viewMode === '2D'
+                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" /> 2D SVG View
+            </button>
+            <button
+              onClick={() => setViewMode('3D')}
+              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                viewMode === '3D'
+                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Box className="w-4 h-4" /> 3D WebGL View
+            </button>
+          </div>
+        </div>
+
+        {/* Main Grid: Interactive Factory Viewport + Decision Inspector */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Interactive 3D Scene + Before/After Diffs */}
+          {/* Left Column: Interactive Factory Scene (2D SVG or 3D WebGL) + Before/After Diffs */}
           <div className="lg:col-span-8 space-y-6">
-            <FactoryScene3D
-              nodes={nodes}
-              edges={edges}
-              agvs={agvs}
-              tasks={tasks}
-              selectedAgvId={selectedAgvId}
-              selectedTaskId={selectedTaskId}
-              onSelectAgv={(id) => {
-                setSelectedAgvId(id === selectedAgvId ? null : id);
-                setSelectedTaskId(null);
-                setSelectedEdgeKey(null);
-                setSelectedNodeId(null);
-              }}
-              onSelectTask={(id) => {
-                setSelectedTaskId(id === selectedTaskId ? null : id);
-                setSelectedAgvId(null);
-                setSelectedEdgeKey(null);
-                setSelectedNodeId(null);
-              }}
-              onSelectRoute={(s, t) => {
-                setSelectedEdgeKey({ source: s, target: t });
-                setSelectedAgvId(null);
-                setSelectedTaskId(null);
-                setSelectedNodeId(null);
-              }}
-              onSelectNode={(id) => {
-                setSelectedNodeId(id === selectedNodeId ? null : id);
-                setSelectedAgvId(null);
-                setSelectedTaskId(null);
-                setSelectedEdgeKey(null);
-              }}
-            />
+            {viewMode === '3D' ? (
+              <FactoryScene3D
+                nodes={nodes}
+                edges={edges}
+                agvs={agvs}
+                tasks={tasks}
+                selectedAgvId={selectedAgvId}
+                selectedTaskId={selectedTaskId}
+                onSelectAgv={(id) => {
+                  setSelectedAgvId(id === selectedAgvId ? null : id);
+                  setSelectedTaskId(null);
+                  setSelectedEdgeKey(null);
+                  setSelectedNodeId(null);
+                }}
+                onSelectTask={(id) => {
+                  setSelectedTaskId(id === selectedTaskId ? null : id);
+                  setSelectedAgvId(null);
+                  setSelectedEdgeKey(null);
+                  setSelectedNodeId(null);
+                }}
+                onSelectRoute={(s, t) => {
+                  setSelectedEdgeKey({ source: s, target: t });
+                  setSelectedAgvId(null);
+                  setSelectedTaskId(null);
+                  setSelectedNodeId(null);
+                }}
+                onSelectNode={(id) => {
+                  setSelectedNodeId(id === selectedNodeId ? null : id);
+                  setSelectedAgvId(null);
+                  setSelectedTaskId(null);
+                  setSelectedEdgeKey(null);
+                }}
+              />
+            ) : (
+              <FactoryMap
+                nodes={nodes}
+                edges={edges}
+                agvs={agvs}
+                tasks={tasks}
+                selectedAgvId={selectedAgvId}
+                selectedTaskId={selectedTaskId}
+                onSelectAgv={(id) => {
+                  setSelectedAgvId(id === selectedAgvId ? null : id);
+                  setSelectedTaskId(null);
+                  setSelectedEdgeKey(null);
+                  setSelectedNodeId(null);
+                }}
+                onSelectTask={(id) => {
+                  setSelectedTaskId(id === selectedTaskId ? null : id);
+                  setSelectedAgvId(null);
+                  setSelectedEdgeKey(null);
+                  setSelectedNodeId(null);
+                }}
+                onEdgeClick={(s, t) => {
+                  setSelectedEdgeKey({ source: s, target: t });
+                  setSelectedAgvId(null);
+                  setSelectedTaskId(null);
+                  setSelectedNodeId(null);
+                }}
+              />
+            )}
 
             <BeforeAfterOptimizationView diffs={diffs} />
           </div>
@@ -245,7 +311,7 @@ export function App() {
       </main>
 
       <footer className="border-t border-slate-800 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500">
-        SmartAGV 3D Optimization System · Powered by React Three Fiber, Three.js, Drei, Python FastAPI, and NetworkX.
+        SmartAGV Optimization System · Supports 2D SVG & 3D WebGL Views · Powered by React Three Fiber, Three.js, Python FastAPI, and NetworkX.
       </footer>
     </div>
   );
