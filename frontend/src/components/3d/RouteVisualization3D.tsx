@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Html } from '@react-three/drei';
 import type { FactoryEdge, FactoryNode } from '../../types/smartagv';
 import * as THREE from 'three';
@@ -16,8 +16,11 @@ export const RouteVisualization3D: React.FC<RouteVisualization3DProps> = ({
   activeRouteEdges,
   onSelectRoute
 }) => {
-  const nodeMap = new Map<string, FactoryNode>();
-  nodes.forEach(n => nodeMap.set(n.id, n));
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, FactoryNode>();
+    nodes.forEach(n => map.set(n.id, n));
+    return map;
+  }, [nodes]);
 
   function tupleKey(u: string, v: string) {
     return [u, v].sort().join('::');

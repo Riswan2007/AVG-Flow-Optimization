@@ -87,10 +87,10 @@ export function App() {
     }
   }, [latestDiff]);
 
-  // Poll state every 800ms
+  // Poll state every 400ms for responsive 3D telemetry stream
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 800);
+    const interval = setInterval(fetchData, 400);
     return () => clearInterval(interval);
   }, [fetchData]);
 

@@ -28,8 +28,37 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
   const beaconRef = useRef<THREE.Mesh>(null);
   const wheelRefs = useRef<THREE.Mesh[]>([]);
 
-  // Animate beacon pulse & rotating wheels during motion
+  // Smooth 60FPS interpolation targets
+  const targetPos = useRef(new THREE.Vector3(...position));
+  const targetRotY = useRef(rotationY);
+  const initialized = useRef(false);
+
+  // Update target coordinates whenever props change
+  if (targetPos.current.x !== position[0] || targetPos.current.y !== position[1] || targetPos.current.z !== position[2]) {
+    targetPos.current.set(position[0], position[1], position[2]);
+  }
+  targetRotY.current = rotationY;
+
+  // Smooth frame-by-frame motion & wheel rotation
   useFrame((state, delta) => {
+    if (groupRef.current) {
+      if (!initialized.current) {
+        groupRef.current.position.set(position[0], position[1], position[2]);
+        groupRef.current.rotation.y = rotationY;
+        initialized.current = true;
+      } else {
+        // Smoothly interpolate position (LERP) toward target at 60 FPS
+        const lerpFactor = Math.min(1, delta * 9);
+        groupRef.current.position.lerp(targetPos.current, lerpFactor);
+
+        // Smoothly interpolate heading rotation
+        let diff = targetRotY.current - groupRef.current.rotation.y;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        groupRef.current.rotation.y += diff * lerpFactor;
+      }
+    }
+
     if (beaconRef.current) {
       if (agv.status === 'offline') {
         const scale = 1.0 + Math.sin(state.clock.elapsedTime * 8) * 0.3;
@@ -67,8 +96,6 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
   return (
     <group
       ref={groupRef}
-      position={position}
-      rotation={[0, rotationY, 0]}
       onClick={(e) => {
         e.stopPropagation();
         onSelect(agv.id);

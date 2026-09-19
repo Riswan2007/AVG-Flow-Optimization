@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { AGV, FactoryNode } from '../../types/smartagv';
 import { AGVModel3D } from './AGVModel3D';
 
@@ -19,8 +19,11 @@ export const AGVFleet3D: React.FC<AGVFleet3DProps> = ({
   onSelectAgv,
   onHoverAgv
 }) => {
-  const nodeMap = new Map<string, FactoryNode>();
-  nodes.forEach(n => nodeMap.set(n.id, n));
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, FactoryNode>();
+    nodes.forEach(n => map.set(n.id, n));
+    return map;
+  }, [nodes]);
 
   const getAgv3DTransform = (agv: AGV): { position: [number, number, number]; rotationY: number } => {
     if (!agv.current_route || agv.current_route.length < 2) {

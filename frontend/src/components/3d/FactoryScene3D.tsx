@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import type { FactoryNode, FactoryEdge, AGV, Task, TaskAssignmentDetail } from '../../types/smartagv';
 import { FactoryEnvironment3D } from './FactoryEnvironment3D';
@@ -48,26 +48,29 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
   const [hoveredAgvId, setHoveredAgvId] = useState<string | null>(null);
 
   // Compute active route edges for selected AGV or Task
-  const activeRouteEdges = new Set<string>();
-  if (selectedAgvId) {
-    const targetAgv = agvs.find(a => a.id === selectedAgvId);
-    if (targetAgv && targetAgv.current_route) {
-      for (let i = 0; i < targetAgv.current_route.length - 1; i++) {
-        const u = targetAgv.current_route[i];
-        const v = targetAgv.current_route[i + 1];
-        activeRouteEdges.add([u, v].sort().join('::'));
+  const activeRouteEdges = useMemo(() => {
+    const set = new Set<string>();
+    if (selectedAgvId) {
+      const targetAgv = agvs.find(a => a.id === selectedAgvId);
+      if (targetAgv && targetAgv.current_route) {
+        for (let i = 0; i < targetAgv.current_route.length - 1; i++) {
+          const u = targetAgv.current_route[i];
+          const v = targetAgv.current_route[i + 1];
+          set.add([u, v].sort().join('::'));
+        }
+      }
+    } else if (selectedTaskId) {
+      const targetTask = tasks.find(t => t.id === selectedTaskId);
+      if (targetTask && targetTask.assigned_route) {
+        for (let i = 0; i < targetTask.assigned_route.length - 1; i++) {
+          const u = targetTask.assigned_route[i];
+          const v = targetTask.assigned_route[i + 1];
+          set.add([u, v].sort().join('::'));
+        }
       }
     }
-  } else if (selectedTaskId) {
-    const targetTask = tasks.find(t => t.id === selectedTaskId);
-    if (targetTask && targetTask.assigned_route) {
-      for (let i = 0; i < targetTask.assigned_route.length - 1; i++) {
-        const u = targetTask.assigned_route[i];
-        const v = targetTask.assigned_route[i + 1];
-        activeRouteEdges.add([u, v].sort().join('::'));
-      }
-    }
-  }
+    return set;
+  }, [selectedAgvId, selectedTaskId, agvs, tasks]);
 
   return (
     <div className="relative w-full aspect-[16/9] min-h-[520px] bg-slate-950 rounded-2xl border-2 border-cyan-500/30 overflow-hidden shadow-2xl">
@@ -158,8 +161,9 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
       {/* R3F WebGL 3D Canvas */}
       <Canvas
         shadows
+        dpr={[1, 1.5]}
         camera={{ position: [3.5, 32, 36], fov: 38 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       >
         {/* Explain Mode Dimmed Backdrop & Highlights */}
         {isExplainMode && (
@@ -171,8 +175,8 @@ export const FactoryScene3D: React.FC<FactoryScene3DProps> = ({
           position={[30, 50, 40]}
           intensity={1.2}
           castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
+          shadow-mapSize-width={512}
+          shadow-mapSize-height={512}
         />
         <pointLight position={[-30, 25, -20]} intensity={0.5} color="#38bdf8" />
         <pointLight position={[30, 25, 20]} intensity={0.5} color="#a855f7" />
