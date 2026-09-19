@@ -249,18 +249,36 @@ class Database:
             conn.commit()
 
     def get_optimization_diffs(self, limit: int = 20) -> List[BeforeAfterDiff]:
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM optimization_diffs ORDER BY id DESC LIMIT ?", (limit,))
-            rows = cursor.fetchall()
-            result = []
-            for r in rows:
-                d_dict = dict(r)
-                d_dict['previous_route'] = json.loads(d_dict['previous_route'] or "[]")
-                d_dict['new_route'] = json.loads(d_dict['new_route'] or "[]")
-                d_dict.pop('id', None)
-                result.append(BeforeAfterDiff(**d_dict))
-            return result
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM optimization_diffs ORDER BY id DESC LIMIT ?", (limit,))
+                rows = cursor.fetchall()
+                result = []
+                for r in rows:
+                    try:
+                        d_dict = dict(r)
+                        prev_route = json.loads(d_dict.get('previous_route') or "[]")
+                        new_route = json.loads(d_dict.get('new_route') or "[]")
+                        result.append(BeforeAfterDiff(
+                            task_id=str(d_dict.get('task_id', '')),
+                            timestamp=str(d_dict.get('timestamp', '')),
+                            reason=str(d_dict.get('reason', '')),
+                            previous_agv=d_dict.get('previous_agv'),
+                            new_agv=d_dict.get('new_agv'),
+                            previous_route=prev_route if isinstance(prev_route, list) else [],
+                            new_route=new_route if isinstance(new_route, list) else [],
+                            previous_distance=float(d_dict.get('previous_distance') or 0.0),
+                            new_distance=float(d_dict.get('new_distance') or 0.0),
+                            previous_congestion=float(d_dict.get('previous_congestion') or 0.0),
+                            new_congestion=float(d_dict.get('new_congestion') or 0.0)
+                        ))
+                    except Exception as e:
+                        print(f"Error parsing diff row: {e}")
+                return result
+        except Exception as e:
+            print(f"Error reading optimization diffs: {e}")
+            return []
 
     def reset_database(self):
         with self.get_connection() as conn:
