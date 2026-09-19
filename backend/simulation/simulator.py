@@ -100,7 +100,8 @@ class SimulatorEngine:
 
                 edge = self.graph_engine.get_edge(u_id, v_id)
                 dist = edge.distance if edge else 30.0
-                travel_sec = dist / max(0.1, agv.speed)
+                # Enhanced AGV speed multiplier for snappy 3D material movement
+                travel_sec = dist / max(0.1, agv.speed * 2.5)
 
                 # Progress delta
                 progress_inc = effective_dt / travel_sec

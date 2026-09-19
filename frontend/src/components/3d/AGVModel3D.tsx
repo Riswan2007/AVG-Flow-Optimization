@@ -47,8 +47,8 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
         groupRef.current.rotation.y = rotationY;
         initialized.current = true;
       } else {
-        // Smoothly interpolate position (LERP) toward target at 60 FPS
-        const lerpFactor = Math.min(1, delta * 9);
+        // Smoothly interpolate position (LERP) toward target at 60 FPS (fast & responsive)
+        const lerpFactor = Math.min(1, delta * 15);
         groupRef.current.position.lerp(targetPos.current, lerpFactor);
 
         // Smoothly interpolate heading rotation

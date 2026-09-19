@@ -105,14 +105,14 @@ class Database:
             if cursor.fetchone()["count"] > 0:
                 return  # Database already seeded
 
-            # Seed AGVs
+            # Seed AGVs with fast velocity
             initial_agvs = [
-                ("AGV-01", "Titan AGV-01", "Storage-A", 92.0, "available", "IDLE", 1.5, 500.0, None, "[]", 0, 0.0, None),
-                ("AGV-02", "Falcon AGV-02", "Machine-01", 76.0, "available", "IDLE", 1.5, 500.0, None, "[]", 0, 0.0, None),
-                ("AGV-03", "Atlas AGV-03", "Storage-B", 48.0, "available", "IDLE", 1.5, 600.0, None, "[]", 0, 0.0, None),
-                ("AGV-04", "Spark AGV-04", "Charging-01", 31.0, "charging", "CHARGING", 1.2, 400.0, None, "[]", 0, 0.0, None),
-                ("AGV-05", "Goliath AGV-05", "Storage-C", 85.0, "available", "IDLE", 1.5, 700.0, None, "[]", 0, 0.0, None),
-                ("AGV-06", "Vortex AGV-06", "Machine-03", 67.0, "available", "IDLE", 1.5, 500.0, None, "[]", 0, 0.0, None),
+                ("AGV-01", "Titan AGV-01", "Storage-A", 92.0, "available", "IDLE", 3.0, 500.0, None, "[]", 0, 0.0, None),
+                ("AGV-02", "Falcon AGV-02", "Machine-01", 76.0, "available", "IDLE", 3.0, 500.0, None, "[]", 0, 0.0, None),
+                ("AGV-03", "Atlas AGV-03", "Storage-B", 48.0, "available", "IDLE", 3.0, 600.0, None, "[]", 0, 0.0, None),
+                ("AGV-04", "Spark AGV-04", "Charging-01", 31.0, "charging", "CHARGING", 2.5, 400.0, None, "[]", 0, 0.0, None),
+                ("AGV-05", "Goliath AGV-05", "Storage-C", 85.0, "available", "IDLE", 3.0, 700.0, None, "[]", 0, 0.0, None),
+                ("AGV-06", "Vortex AGV-06", "Machine-03", 67.0, "available", "IDLE", 3.0, 500.0, None, "[]", 0, 0.0, None),
             ]
             cursor.executemany("""
                 INSERT INTO agvs (id, name, location, battery, status, action_state, speed, capacity, current_task, current_route, route_index, sub_progress, estimated_completion_time)
