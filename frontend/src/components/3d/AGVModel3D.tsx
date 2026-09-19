@@ -1,12 +1,13 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import type { AGV } from '../../types/smartagv';
+import type { AGV, FactoryNode } from '../../types/smartagv';
 import { CargoBox3D } from './CargoBox3D';
 import * as THREE from 'three';
 
 interface AGVModel3DProps {
   agv: AGV;
+  nodeMap: Map<string, FactoryNode>;
   position: [number, number, number];
   rotationY: number;
   isSelected: boolean;
@@ -17,6 +18,7 @@ interface AGVModel3DProps {
 
 export const AGVModel3D: React.FC<AGVModel3DProps> = ({
   agv,
+  nodeMap,
   position,
   rotationY,
   isSelected,
@@ -28,34 +30,67 @@ export const AGVModel3D: React.FC<AGVModel3DProps> = ({
   const beaconRef = useRef<THREE.Mesh>(null);
   const wheelRefs = useRef<THREE.Mesh[]>([]);
 
-  // Smooth 60FPS interpolation targets
-  const targetPos = useRef(new THREE.Vector3(...position));
-  const targetRotY = useRef(rotationY);
+  // Continuous local progress tracking refs for 60FPS fluid motion
+  const localSubProgress = useRef(agv.sub_progress || 0);
+  const currentRouteIdx = useRef(agv.route_index || 0);
   const initialized = useRef(false);
 
-  // Update target coordinates whenever props change
-  if (targetPos.current.x !== position[0] || targetPos.current.y !== position[1] || targetPos.current.z !== position[2]) {
-    targetPos.current.set(position[0], position[1], position[2]);
+  // Sync backend telemetry updates softly without interrupting local progress
+  if (agv.route_index !== currentRouteIdx.current) {
+    currentRouteIdx.current = agv.route_index;
+    localSubProgress.current = agv.sub_progress || 0;
+  } else if (Math.abs((agv.sub_progress || 0) - localSubProgress.current) > 0.35) {
+    localSubProgress.current = agv.sub_progress || 0;
   }
-  targetRotY.current = rotationY;
 
-  // Smooth frame-by-frame motion & wheel rotation
+  // Smooth frame-by-frame 60 FPS continuous driving animation
   useFrame((state, delta) => {
     if (groupRef.current) {
       if (!initialized.current) {
         groupRef.current.position.set(position[0], position[1], position[2]);
         groupRef.current.rotation.y = rotationY;
         initialized.current = true;
-      } else {
-        // Smoothly interpolate position (LERP) toward target at 60 FPS (fast & responsive)
-        const lerpFactor = Math.min(1, delta * 15);
-        groupRef.current.position.lerp(targetPos.current, lerpFactor);
+      } else if (agv.status === 'busy' && agv.current_route && agv.current_route.length >= 2) {
+        const idx = Math.min(currentRouteIdx.current, agv.current_route.length - 2);
+        const uNode = nodeMap.get(agv.current_route[idx]);
+        const vNode = nodeMap.get(agv.current_route[idx + 1]);
 
-        // Smoothly interpolate heading rotation
-        let diff = targetRotY.current - groupRef.current.rotation.y;
+        if (uNode && vNode) {
+          const uX = uNode.pos.x, uY = uNode.pos.y || 0, uZ = uNode.pos.z || 0;
+          const vX = vNode.pos.x, vY = vNode.pos.y || 0, vZ = vNode.pos.z || 0;
+          const dx = vX - uX, dz = vZ - uZ;
+          const dist = Math.sqrt(dx * dx + dz * dz) || 10.0;
+
+          // Continuous distance progress delta per 60FPS frame
+          const speedMetersPerSec = (agv.speed || 3.0) * 2.5;
+          localSubProgress.current += (delta * speedMetersPerSec) / dist;
+
+          // Blend gently with backend progress target
+          const targetBackendProg = agv.sub_progress || 0;
+          localSubProgress.current += (targetBackendProg - localSubProgress.current) * Math.min(1, delta * 2.0);
+          localSubProgress.current = Math.max(0.0, Math.min(1.0, localSubProgress.current));
+
+          const p = localSubProgress.current;
+          const curX = uX + dx * p;
+          const curY = uY + (vY - uY) * p;
+          const curZ = uZ + dz * p;
+          const headingRotY = Math.atan2(dx, dz);
+
+          // Smoothly update 3D position and heading angle continuously
+          groupRef.current.position.lerp(new THREE.Vector3(curX, curY, curZ), Math.min(1, delta * 18));
+
+          let diff = headingRotY - groupRef.current.rotation.y;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          groupRef.current.rotation.y += diff * Math.min(1, delta * 18);
+        }
+      } else {
+        // Smooth idle / charging position LERP
+        groupRef.current.position.lerp(new THREE.Vector3(...position), Math.min(1, delta * 12));
+        let diff = rotationY - groupRef.current.rotation.y;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
-        groupRef.current.rotation.y += diff * lerpFactor;
+        groupRef.current.rotation.y += diff * Math.min(1, delta * 12);
       }
     }
 

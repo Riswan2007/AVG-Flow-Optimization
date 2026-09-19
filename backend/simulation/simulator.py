@@ -129,42 +129,50 @@ class SimulatorEngine:
                     agv.route_index += 1
                     agv.location = v_id
 
-                    # Check if reached final route node (Destination)
-                    if agv.route_index >= len(route) - 1:
-                        if agv.current_task and agv.current_task in task_map:
-                            t_obj = task_map[agv.current_task]
-                            t_obj.status = TaskStatus.COMPLETED
-                            self.db.update_task(t_obj)
-                            
-                            # Metrics logging
-                            pickup_d, deliv_d, _ = self.graph_engine.get_route_metrics(route)
-                            self.completed_task_distances.append(pickup_d)
-                            self.completed_task_times.append(deliv_d)
+                # Check if reached final route node (Destination)
+                if agv.route_index >= len(route) - 1:
+                    if agv.current_task and agv.current_task in task_map:
+                        t_obj = task_map[agv.current_task]
+                        t_obj.status = TaskStatus.COMPLETED
+                        self.db.update_task(t_obj)
+                        
+                        # Metrics logging
+                        pickup_d, deliv_d, _ = self.graph_engine.get_route_metrics(route)
+                        self.completed_task_distances.append(pickup_d)
+                        self.completed_task_times.append(deliv_d)
 
-                            now_str = datetime.datetime.now().strftime("%H:%M:%S")
-                            self.db.add_activity_log(ActivityLog(
-                                id=f"LOG-{uuid.uuid4().hex[:10]}",
-                                timestamp=now_str,
-                                level="success",
-                                event_type="assignment",
-                                message=f"TASK COMPLETED: {t_obj.id} transported by {agv.id} to {t_obj.destination}.",
-                                details={"task_id": t_obj.id, "agv_id": agv.id}
-                            ))
+                        now_str = datetime.datetime.now().strftime("%H:%M:%S")
+                        self.db.add_activity_log(ActivityLog(
+                            id=f"LOG-{uuid.uuid4().hex[:10]}",
+                            timestamp=now_str,
+                            level="success",
+                            event_type="assignment",
+                            message=f"TASK COMPLETED: {t_obj.id} transported by {agv.id} to {t_obj.destination}.",
+                            details={"task_id": t_obj.id, "agv_id": agv.id}
+                        ))
 
+                    # If route destination is Charging Station, transition to CHARGING
+                    if route[-1] == "Charging-01" or agv.location == "Charging-01":
+                        agv.status = AGVStatus.CHARGING
+                        agv.action_state = "CHARGING"
+                        agv.current_task = None
+                        agv.current_route = []
+                        agv.route_index = 0
+                    else:
                         agv.status = AGVStatus.AVAILABLE
+                        agv.action_state = "IDLE"
                         agv.current_task = None
                         agv.current_route = []
                         agv.route_index = 0
                         agv.estimated_completion_time = 0.0
-                        state_changed = True
-
-                self.db.update_agv(agv)
+                    state_changed = True
 
             elif agv.status == AGVStatus.CHARGING:
-                # Recharge battery slowly
-                agv.battery = min(100.0, agv.battery + 2.0 * effective_dt)
+                # Recharge battery at fast rate
+                agv.battery = min(100.0, agv.battery + 8.0 * effective_dt)
                 if agv.battery >= 95.0:
                     agv.status = AGVStatus.AVAILABLE
+                    agv.action_state = "IDLE"
                     now_str = datetime.datetime.now().strftime("%H:%M:%S")
                     self.db.add_activity_log(ActivityLog(
                         id=f"LOG-CHARGE-{time.time()}",
@@ -175,7 +183,29 @@ class SimulatorEngine:
                         details={"agv_id": agv.id}
                     ))
                     state_changed = True
-                self.db.update_agv(agv)
+
+            # Automatic Low Battery Dispatch Check (Battery <= 20% and not currently charging/navigating to charger)
+            if agv.battery <= 20.0 and agv.status == AGVStatus.AVAILABLE:
+                charge_path, _, _, _ = self.graph_engine.find_optimal_route(agv.location, "Charging-01")
+                if charge_path and len(charge_path) >= 2:
+                    agv.status = AGVStatus.BUSY
+                    agv.action_state = "ROUTING_TO_CHARGER"
+                    agv.current_route = charge_path
+                    agv.route_index = 0
+                    agv.sub_progress = 0.0
+                    agv.current_task = None
+                    now_str = datetime.datetime.now().strftime("%H:%M:%S")
+                    self.db.add_activity_log(ActivityLog(
+                        id=f"LOG-LOWBATT-{uuid.uuid4().hex[:10]}",
+                        timestamp=now_str,
+                        level="warning",
+                        event_type="battery",
+                        message=f"LOW BATTERY DISPATCH: {agv.id} at {agv.battery:.1f}% battery. Driving to Charging Hub (Charging-01).",
+                        details={"agv_id": agv.id, "battery": agv.battery}
+                    ))
+                    state_changed = True
+
+            self.db.update_agv(agv)
 
         if state_changed:
             self.run_optimization("Task Completion / AGV State Shift")

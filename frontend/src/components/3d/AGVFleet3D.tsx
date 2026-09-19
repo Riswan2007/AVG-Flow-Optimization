@@ -75,6 +75,7 @@ export const AGVFleet3D: React.FC<AGVFleet3DProps> = ({
           <AGVModel3D
             key={agv.id}
             agv={agv}
+            nodeMap={nodeMap}
             position={transform.position}
             rotationY={transform.rotationY}
             isSelected={selectedAgvId === agv.id}
